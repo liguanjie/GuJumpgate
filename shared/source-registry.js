@@ -416,6 +416,8 @@
       if (normalizedHostname === 'www.icloud.com' || normalizedHostname === 'www.icloud.com.cn') return 'icloud-mail';
       if (normalizedUrl.includes('duckduckgo.com/email/settings/autofill')) return 'duck-mail';
       if (normalizedUrl.includes('2925.com')) return 'mail-2925';
+      if (normalizedHostname === 'pay.openai.com' || normalizedHostname === 'checkout.stripe.com') return 'plus-checkout';
+      if (normalizedHostname === 'www.paypal.com' || normalizedHostname === 'paypal.com') return 'paypal-flow';
       if (isSignupEntryHost(normalizedHostname)) return 'chatgpt';
       return 'unknown-source';
     }
