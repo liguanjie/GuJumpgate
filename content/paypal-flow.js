@@ -12,6 +12,7 @@ const PAYPAL_HOSTED_STAGE_REVIEW = 'review_consent';
 const PAYPAL_HOSTED_STAGE_APPROVAL = 'approval';
 const PAYPAL_HOSTED_STAGE_UNKNOWN = 'unknown';
 const PAYPAL_HOSTED_HERMES_AUTORUN_SENTINEL = '__MULTIPAGE_PAYPAL_HOSTED_HERMES_AUTORUN__';
+const PAYPAL_HOSTED_GUEST_SUBMIT_SENTINEL = '__MULTIPAGE_PAYPAL_HOSTED_GUEST_SUBMIT__';
 
 if (document.documentElement.getAttribute(PAYPAL_FLOW_LISTENER_SENTINEL) !== '1') {
   document.documentElement.setAttribute(PAYPAL_FLOW_LISTENER_SENTINEL, '1');
@@ -610,14 +611,23 @@ async function fillHostedGuestCheckout(payload = {}) {
   fillHostedInputById('billingLine1', address.street || '');
   selectHostedOptionByIdText('billingState', address.state || '');
 
-  await sleep(500);
-  const clickResult = await clickHostedGenericSubmitButton(0);
-  removeHostedCaptchaArtifacts();
+  const rootScope = typeof window !== 'undefined' ? window : globalThis;
+  if (!rootScope[PAYPAL_HOSTED_GUEST_SUBMIT_SENTINEL]) {
+    rootScope[PAYPAL_HOSTED_GUEST_SUBMIT_SENTINEL] = true;
+    setTimeout(() => {
+      clickHostedGenericSubmitButton(0).catch((error) => {
+        log(`PayPal hosted checkout guest submit 失败：${error?.message || error}`, 'warn');
+      }).finally(() => {
+        rootScope[PAYPAL_HOSTED_GUEST_SUBMIT_SENTINEL] = false;
+      });
+    }, 500);
+  }
 
   return {
     stage: PAYPAL_HOSTED_STAGE_GUEST_CHECKOUT,
     submitted: true,
-    verificationRequired: Boolean(clickResult?.verificationRequired || hasHostedVerificationInputs()),
+    verificationRequired: Boolean(hasHostedVerificationInputs()),
+    submitScheduled: true,
   };
 }
 
